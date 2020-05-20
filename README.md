@@ -41,11 +41,11 @@ There are three built-in commands that are used for managing the connection betw
 - Close
 - Acknowledge
 
-The open and close commands must be sent with address and data lengths of 0.
+The open and close commands are sent with address and data lengths of 0.
 
-The Acknowledge command must only be used in response packets. The number of data bytes returned is determined by command packet that is being responded to.
+The Acknowledge command can only be used in response packets. The number of data bytes returned is determined by command packet that is being responded to.
 
-These commands are used by the library itself and can only be sent by using the built in methods `open()`, `close()` and `acknowledge(response_data)'
+These commands are used by the library itself and can only be sent by using the built in methods `open()`, `close()` and `acknowledge(response_data)`
 
 ### Custom Commands
 
