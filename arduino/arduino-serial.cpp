@@ -76,8 +76,6 @@ void SerialCommand::getResponse(byte[] data, int &byte_count) {
   Encode an array of bytes into an array of ASCII hex numbers by first
   splitting each byte into two nibbles, then adding a value to convert
   them from their integer value to the ASCII value for that nibble.
-  Hex 0..9 = ASCII 48..57
-  Hex A..F = ASCII 65..70
 */
 void SerialCommand::encodeBytes(byte bytes[], int byte_count, byte encoded_bytes[]) {
   auto high_nibble = [](byte x) {return (x >> 4) & 0xF; }; 
@@ -91,6 +89,12 @@ void SerialCommand::encodeBytes(byte bytes[], int byte_count, byte encoded_bytes
   }
 }
 
+/*
+  Encode a single byte as an ASCII Hex number by first splitting the byte
+  into two nibbles, then adding a value to convert the nibbles from their
+  integer value to the ASCII value for that nibble.
+*/
+
 void SerialCommand::encodeByte(byte data, byte encoded_bytes[]) {
   auto high_nibble = [](byte x) {return (x >> 4) & 0xF; }; 
   auto low_nibble = [](byte x) {return x & 0xF; }; 
@@ -103,6 +107,12 @@ void SerialCommand::encodeByte(byte data, byte encoded_bytes[]) {
 
 }
 
+/*
+  Converts a nibble (stored as a byte as C++ doesn't have a typo for
+  nibbles) into an ASCII character representing it's value in Hex
+  Hex 0..9 becomes ASCII 48..57
+  Hex A..F becomes ASCII 65..70
+*/
 byte SerialCommand::nibbleToASCII(byte data) {
   if (data < 10) {
     return data += 48; 
