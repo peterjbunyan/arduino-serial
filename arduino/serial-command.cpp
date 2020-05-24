@@ -87,10 +87,8 @@ bool SerialCommand::sendCommand(Command command, byte address[],
 */
 bool SerialCommand::getResponse(byte data[], byte &data_length) {
   if (receivePacket()) {
-    for (byte i = 0; i < received_packet_length; i++) {
-      data[i] = received_packet[i];
-    }
-    data_length = received_packet_length;
+    decodeBytes(received_packet, received_packet_length, data);
+    data_length = received_packet_length/2;
     packet_received = false;
     return true;
   }
@@ -102,17 +100,29 @@ bool SerialCommand::getResponse(byte data[], byte &data_length) {
   splitting each byte into two nibbles, then adding a value to convert
   them from their integer value to the ASCII value for that nibble.
 */
-void SerialCommand::encodeBytes(byte bytes[],
-                                int bytes_length, byte encoded_bytes[]) {
-  auto high_nibble = [](byte x) {return (x >> 4) & 0xF; }; 
-  auto low_nibble = [](byte x) {return x & 0xF; }; 
+void SerialCommand::encodeBytes(byte bytes[], int bytes_length,
+                                char encoded_bytes[]) {
+  char single_byte[2] = {0};
   for (int i = 0; i < bytes_length; i++) {
-    encoded_bytes[i*2] = high_nibble(bytes[i]);
-    encoded_bytes[(i*2)+1] = low_nibble(bytes[i]);
+    encodeByte(bytes[i], single_byte);
+    encoded_bytes[i*2] = single_byte[0];
+    encoded_bytes[(i*2)+1] = single_byte[1];
   }
-  for (int i = 0; i < (bytes_length * 2); i++) {
-    encoded_bytes[i] = nibbleToASCII(encoded_bytes[i]);
+}
+
+/*
+  Decode an array of ASCII hex numbers into bytes by converting each
+  char back to a nibble, then combining each pair of nibbles in to a
+  byte.
+*/
+void SerialCommand::decodeBytes(char characters[], int bytes_length,
+                                byte decoded_characters[]) {
+
+  for (int i = 0; i < (bytes_length / 2); i++) {
+    decoded_characters[i] = (asciiToNibble(characters[i*2]) << 4);
+    decoded_characters[i] |= asciiToNibble(characters[(i*2)+1]);
   }
+
 }
 
 /*
@@ -121,15 +131,12 @@ void SerialCommand::encodeBytes(byte bytes[],
   integer value to the ASCII value for that nibble.
 */
 
-void SerialCommand::encodeByte(byte data, byte encoded_bytes[]) {
+void SerialCommand::encodeByte(byte data, char encoded_byte[]) {
   auto high_nibble = [](byte x) {return (x >> 4) & 0xF; }; 
   auto low_nibble = [](byte x) {return x & 0xF; }; 
 
-  encoded_bytes[0] = high_nibble(data);
-  encoded_bytes[1] = low_nibble(data);
-  
-  encoded_bytes[0] = nibbleToASCII(encoded_bytes[0]);
-  encoded_bytes[1] = nibbleToASCII(encoded_bytes[1]);
+  encoded_byte[0] = nibbleToASCII(high_nibble(data));
+  encoded_byte[1] = nibbleToASCII(low_nibble(data));
 
 }
 
@@ -139,11 +146,25 @@ void SerialCommand::encodeByte(byte data, byte encoded_bytes[]) {
   Hex 0..9 becomes ASCII 48..57
   Hex A..F becomes ASCII 65..70
 */
-byte SerialCommand::nibbleToASCII(byte data) {
+char SerialCommand::nibbleToASCII(byte data) {
   if (data < 10) {
     return data += 48; 
   } else {
     return data  += 55;
+  }
+}
+
+/*
+  Converts a nibble (stored as a byte as C++ doesn't have a type for
+  nibbles) into an ASCII character representing it's value in Hex
+  ASCII 48..57 becomes Hex 0..9
+  ASCII 65..70 becomes Hex A..F
+*/
+byte SerialCommand::asciiToNibble(char character) {
+  if (character <= '9') {
+    return character -= 48; 
+  } else {
+    return character  -= 55;
   }
 }
 
@@ -158,9 +179,10 @@ void SerialCommand::sendPacket(byte packet[], int packet_length) {
 
 /*
   Receive and store a packet. This is a blocking function and won't return
-  until a packet has been received. It will return true for packets that
-  contain between 6 and 64 bytes of data between the header and footer,
-  and false for malformed packets.
+  until a packet has been received. Returns true if the packet is 
+  correctly formed and false if it is not. A correctly formed packets has
+  between 6 and 60 bytes, and the number of bytes is even (Each data byte
+  is encoded as two bytes in the packet).
 */
 bool SerialCommand::receivePacket() {
   MessageState state = HEADER;
@@ -190,11 +212,15 @@ bool SerialCommand::receivePacket() {
       if (data_length >= 60) {
         return false;
       }
-    } else if ((data_byte == '-') && (data_length >= 6) {
+    } else if (data_byte == '-') {
       state = FOOTER;
     } else {
       return false;
     }
+  }
+  
+  if ((data_length < 6) || ((data_length % 2) != 0)) {
+    return false;
   }
   
   data_byte = getSerialByte();

@@ -32,12 +32,15 @@ void loop() {
     last_state = HIGH;
   }
   
-  char response[64] = {0};
+  byte response[64] = {0};
   byte response_length = 0;
   if (SerialComm.getResponse(response, response_length) == true) {
     lcd.clear();
     lcd.print("Got a packet!");
-    lcd.print(response);
+    for (byte i = 0; i < response_length; i++) {
+      lcd.print(response[i]);
+      lcd.print(", ");
+    }
   } else {
     lcd.clear();
     lcd.print("Got a malformed packet!");

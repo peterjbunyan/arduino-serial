@@ -61,12 +61,14 @@ class SerialCommand {
     
     //Helper methods
     void encodeBytes(byte bytes[], 
-                      int bytes_length, byte encoded_bytes[]);
-    void encodeByte(byte data, byte encoded_bytes[]);
-    byte nibbleToASCII(byte data);
+                      int bytes_length, char encoded_bytes[]);
+    void decodeBytes(char characters[], 
+                      int bytes_length, byte decoded_characters[]);
+    void encodeByte(byte data, char encoded_byte[]);
+    char nibbleToASCII(byte data);
+    byte asciiToNibble(char character);
     void sendPacket(byte packet[], int packet_length);
-    bool receivePacket(int timeout);
-    
+    bool receivePacket();
     byte getSerialByte();
     bool isHexChar(char character);
     
