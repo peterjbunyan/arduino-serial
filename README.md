@@ -1,6 +1,11 @@
 # arduino-serial
 A library for sending serial data between an Arduino and another serial device
 
+## Supported Platforms
+
+![Arduino: Work in progress](https://img.shields.io/badge/Arduino-Work%20in%20progress-yellow)
+![Python: Not started](https://img.shields.io/badge/Python-Not%20started-red)
+
 ## Description
 This library is used for communicating with an Arduino via serial in a connection oriented way. This can be between an Arduino and a serial host or between two Arduino devices. The communication can be be opened from either end and is controlled by the device that initiates the connection.
 
