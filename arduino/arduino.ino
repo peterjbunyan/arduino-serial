@@ -1,6 +1,9 @@
 #include "serial-command.h"
+#include <LiquidCrystal.h>
 
 int button = 12;
+
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 Range address_range, data_range, response_range = {0,0};
 Command button_pressed = {1, address_range, data_range, response_range};
@@ -10,6 +13,8 @@ void setup() {
   SerialComm.begin(250000);
 
   pinMode(button, INPUT_PULLUP);
+  
+  lcd.begin(16, 4);
 
 }
 
@@ -25,6 +30,17 @@ void loop() {
     last_state = LOW;
   } else {
     last_state = HIGH;
+  }
+  
+  char response[64] = {0};
+  byte response_length = 0;
+  if (SerialComm.getResponse(response, response_length) == true) {
+    lcd.clear();
+    lcd.print("Got a packet!");
+    lcd.print(response);
+  } else {
+    lcd.clear();
+    lcd.print("Got a malformed packet!");
   }
   
 }

@@ -16,7 +16,11 @@
 #include "serial-command.h"
 
 // Define and initialise our single class instance
-SerialCommand SerComm = SerialCommand::getInstance();
+SerialCommand SerialComm = SerialCommand::getInstance();
+
+const Command SerialCommand::open_command = {253, {0,0}, {0,0}, {0,0}};
+const Command SerialCommand::close_command = {254, {0,0}, {0,0}, {0,0}};
+const Command SerialCommand::ack_command = {255, {0,0}, {0,0}, {0,0}};
 
 /*
   Returns the single instance of this class, instantiating it if this 
@@ -66,6 +70,7 @@ bool SerialCommand::sendCommand(Command command) {
   
   //TODO: Implement ACK check
   
+  
 }
 
 /*
@@ -80,8 +85,16 @@ bool SerialCommand::sendCommand(Command command, byte address[],
 /*
   Send a command to the other party and wait for the acknowledgement
 */
-void SerialCommand::getResponse(byte data[], int &data_length) {
-  //TODO
+bool SerialCommand::getResponse(byte data[], byte &data_length) {
+  if (receivePacket()) {
+    for (byte i = 0; i < received_packet_length; i++) {
+      data[i] = received_packet[i];
+    }
+    data_length = received_packet_length;
+    packet_received = false;
+    return true;
+  }
+  return false;
 }
 
 /*
@@ -121,7 +134,7 @@ void SerialCommand::encodeByte(byte data, byte encoded_bytes[]) {
 }
 
 /*
-  Converts a nibble (stored as a byte as C++ doesn't have a typo for
+  Converts a nibble (stored as a byte as C++ doesn't have a type for
   nibbles) into an ASCII character representing it's value in Hex
   Hex 0..9 becomes ASCII 48..57
   Hex A..F becomes ASCII 65..70
@@ -141,4 +154,81 @@ void SerialCommand::sendPacket(byte packet[], int packet_length) {
   Serial.write("++");
   Serial.write(packet, packet_length);
   Serial.write("--");
+}
+
+/*
+  Receive and store a packet. This is a blocking function and won't return
+  until a packet has been received. It will return true for packets that
+  contain between 6 and 64 bytes of data between the header and footer,
+  and false for malformed packets.
+*/
+bool SerialCommand::receivePacket() {
+  MessageState state = HEADER;
+  byte header_count = 0;
+  //Max data size is max packet length (64) minus two bytes each for the
+  //header and footer
+  byte data_buffer[60];
+  byte data_length = 0;
+  byte data_byte = 0;
+  
+  while (state == HEADER) {
+    data_byte = getSerialByte();
+    if (data_byte == '+') {
+      header_count++;
+      if (header_count >= 2) {
+        state = DATA;
+      }
+    } else {
+      header_count = 0;
+    }
+  }
+  
+  while (state == DATA) {
+    data_byte = getSerialByte();
+    if (isHexChar(data_byte)) {
+      data_buffer[data_length++] = data_byte;
+      if (data_length >= 60) {
+        return false;
+      }
+    } else if ((data_byte == '-') && (data_length >= 6) {
+      state = FOOTER;
+    } else {
+      return false;
+    }
+  }
+  
+  data_byte = getSerialByte();
+  if (data_byte == '-'){
+    for (int i = 0; i < data_length; i++) {
+      received_packet[i] = data_buffer[i];
+    }
+    received_packet_length = data_length;
+    packet_received = true;
+    return true;
+  }
+
+  return false;
+  
+}
+
+/*
+  A helper to wait for and return the next received byte
+*/
+byte SerialCommand::getSerialByte() {
+  while (Serial.available() == false) {};
+  return Serial.read();
+}
+
+/*
+  A helper method to check if a byte is an ASCII character the represents
+  a Hex digit (0..9 and A..F)
+*/
+bool SerialCommand::isHexChar(char character) {
+  if (('0' <= character) && (character <= '9')) {
+    return true;
+  } else if (('A' <= character) && (character <= 'F')) {
+    return true;
+  } else {
+    return false;
+  }
 }

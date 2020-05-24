@@ -30,6 +30,12 @@ struct Command {
   Range response_length;
 };
 
+enum MessageState {
+  HEADER = 0,
+  DATA = 1,
+  FOOTER = 2
+};
+
 class SerialCommand {
   
   public:
@@ -41,17 +47,28 @@ class SerialCommand {
     bool sendCommand(Command command);
     bool sendCommand(Command command, byte address[],
                       int address_length, byte data[], int data_length);
-    void getResponse(byte data[], int &data_length);
+    bool getResponse(byte data[], byte &data_length);
     
   private:
   
     SerialCommand() {};
     
+    //Command variables
+    static const Command open_command, close_command, ack_command;
+    volatile byte received_packet[60] = {0};
+    volatile byte received_packet_length = 0;
+    volatile bool packet_received = false;
+    
+    //Helper methods
     void encodeBytes(byte bytes[], 
                       int bytes_length, byte encoded_bytes[]);
     void encodeByte(byte data, byte encoded_bytes[]);
     byte nibbleToASCII(byte data);
     void sendPacket(byte packet[], int packet_length);
+    bool receivePacket(int timeout);
+    
+    byte getSerialByte();
+    bool isHexChar(char character);
     
 };
 
