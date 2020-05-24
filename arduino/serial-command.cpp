@@ -16,7 +16,7 @@
 #include "arduino-serial.h"
 
 // Define and initialise our single class instance
-SerialCommand SerialComm = SerialCommand.getInstance()
+SerialCommand SerComm = SerialCommand::getInstance();
 
 /*
   Returns the single instance of this class, instantiating it if this 
@@ -46,7 +46,7 @@ bool SerialCommand::open() {
   Close the connection with the other party.
 */
 bool SerialCommand::close() {
-  //TODO
+  //
 }
 
 /*
@@ -59,16 +59,16 @@ bool SerialCommand::sendCommand(Command command) {
 /*
   Send a command to the other party and wait for the acknowledgement
 */
-bool SerialCommand::sendCommand(Command command, byte[] address, 
-                                int address_len, byte[] data,
-                                int data_len)) {
+bool SerialCommand::sendCommand(Command command, byte address[], 
+                                int address_length,
+                                byte data[], int data_length) {
   //TODO
 }
 
 /*
   Send a command to the other party and wait for the acknowledgement
 */
-void SerialCommand::getResponse(byte[] data, int &byte_count) {
+void SerialCommand::getResponse(byte data[], int &data_length) {
   //TODO
 }
 
@@ -77,14 +77,15 @@ void SerialCommand::getResponse(byte[] data, int &byte_count) {
   splitting each byte into two nibbles, then adding a value to convert
   them from their integer value to the ASCII value for that nibble.
 */
-void SerialCommand::encodeBytes(byte bytes[], int byte_count, byte encoded_bytes[]) {
+void SerialCommand::encodeBytes(byte bytes[],
+                                int bytes_length, byte encoded_bytes[]) {
   auto high_nibble = [](byte x) {return (x >> 4) & 0xF; }; 
   auto low_nibble = [](byte x) {return x & 0xF; }; 
-  for (int i = 0; i < byte_count; i++) {
+  for (int i = 0; i < bytes_length; i++) {
     encoded_bytes[i*2] = high_nibble(bytes[i]);
     encoded_bytes[(i*2)+1] = low_nibble(bytes[i]);
   }
-  for (int i = 0; i < (byte_count * 2); i++) {
+  for (int i = 0; i < (bytes_length * 2); i++) {
     encoded_bytes[i] = nibbleToASCII(encoded_bytes[i]);
   }
 }
@@ -99,8 +100,8 @@ void SerialCommand::encodeByte(byte data, byte encoded_bytes[]) {
   auto high_nibble = [](byte x) {return (x >> 4) & 0xF; }; 
   auto low_nibble = [](byte x) {return x & 0xF; }; 
 
-  encoded_bytes[0] = high_nibble(bytes[i]);
-  encoded_bytes[1] = low_nibble(bytes[i]);
+  encoded_bytes[0] = high_nibble(data);
+  encoded_bytes[1] = low_nibble(data);
   
   encoded_bytes[0] = nibbleToASCII(encoded_bytes[0]);
   encoded_bytes[1] = nibbleToASCII(encoded_bytes[1]);

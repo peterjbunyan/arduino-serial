@@ -13,8 +13,10 @@
   
 */
 
-#ifndef ARDUINO-SERIAL_h
-#define  ARDUINO-SERIAL_h
+#include <arduino.h>
+
+#ifndef SERIAL_COMMAND_h
+#define  SERIAL_COMMAND_h
 
 struct Range {
   byte min;
@@ -32,27 +34,29 @@ class SerialCommand {
   
   public:
   
+    static SerialCommand& getInstance();
     void begin(long speed);
     bool open();
     bool close();
     bool sendCommand(Command command);
-    bool sendCommand(Command command, byte[] address, int address_len,
-                      byte[] data, int data_len);
-    void getResponse(byte[] data, int &byte_count);
+    bool sendCommand(Command command, byte address[],
+                      int address_length, byte data[], int data_length);
+    void getResponse(byte data[], int &data_length);
     
   private:
   
     SerialCommand() {};
-    SerialCommand getInstance();
     
-    void encodeBytes(byte[] bytes, int byte_count, byte[] encoded_bytes);
+    void encodeBytes(byte bytes[], 
+                      int bytes_length, byte encoded_bytes[]);
     void encodeByte(byte data, byte encoded_bytes[]);
     byte nibbleToASCII(byte data);
+    void sendPacket(byte packet[], int packet_length);
     
 };
 
-//Define an externally accessible variable to hold the only instance of our 
-//class
+//Define an externally accessible variable to hold the only instance of
+//our class
 extern SerialCommand SerialComm;
 
 #endif
