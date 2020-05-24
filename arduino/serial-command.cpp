@@ -53,7 +53,19 @@ bool SerialCommand::close() {
   Send a command to the other party and wait for the acknowledgement
 */
 bool SerialCommand::sendCommand(Command command) {
-  //TODO
+  if ((command.address_length.min != 0) 
+        || (command.data_length.min != 0)) {
+    return false;
+  }
+  
+  byte packet[3] = {command.ID, 0, 0};
+  byte encoded_packet[6];
+  encodeBytes(packet, 3, encoded_packet);
+  
+  sendPacket(encoded_packet, 6);
+  
+  //TODO: Implement ACK check
+  
 }
 
 /*
@@ -120,4 +132,13 @@ byte SerialCommand::nibbleToASCII(byte data) {
   } else {
     return data  += 55;
   }
+}
+
+/*
+  Sends a packet with a header and footer added
+*/
+byte SerialCommand::sendPacket(byte packet[], int packet_length) {
+  Serial.write('++');
+  Serial.write(packet, packet_length);
+  Serial.write('--');
 }
