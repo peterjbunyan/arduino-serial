@@ -13,7 +13,7 @@
   
 */
 
-#include "arduino-serial.h"
+#include "serial-command.h"
 
 // Define and initialise our single class instance
 SerialCommand SerComm = SerialCommand::getInstance();
@@ -137,8 +137,8 @@ byte SerialCommand::nibbleToASCII(byte data) {
 /*
   Sends a packet with a header and footer added
 */
-byte SerialCommand::sendPacket(byte packet[], int packet_length) {
-  Serial.write('++');
+void SerialCommand::sendPacket(byte packet[], int packet_length) {
+  Serial.write("++");
   Serial.write(packet, packet_length);
-  Serial.write('--');
+  Serial.write("--");
 }
