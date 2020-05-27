@@ -5,8 +5,9 @@
   A library for sending commands and data between an Arduino and another
   device over a serial connection.
   
-  This is a singleton class as (most) Arduino boards only support one 
-  hardware serial port, which we will be using.
+  While most Arduino boards only have one serial port, boards such as the
+  Mega have multiple hardware UARTs, and more can be set-up using the
+  SoftwareSerial library
   
   You can find more details on how this library works in the documentation
   in the GitHub repository https://github.com/peterjbunyan/arduino-serial
@@ -15,28 +16,9 @@
 
 #include "serial-command.h"
 
-// Define and initialise our single class instance
-SerialCommand SerialComm = SerialCommand::getInstance();
-
 const Command SerialCommand::open_command = {253, {0,0}, {0,0}, {0,0}};
 const Command SerialCommand::close_command = {254, {0,0}, {0,0}, {0,0}};
 const Command SerialCommand::ack_command = {255, {0,0}, {0,0}, {0,0}};
-
-/*
-  Returns the single instance of this class, instantiating it if this 
-  hasn't been done already.
-*/
-SerialCommand& SerialCommand::getInstance() {
-  static SerialCommand instance;
-  return instance;
-}
-
-/*
-  Set up the serial port ready to open the connection
-*/
-void SerialCommand::begin(long speed) {
-  Serial.begin(speed);
-}
 
 /*
   Open the connection with the other party. As we opened the connection
@@ -83,7 +65,8 @@ bool SerialCommand::sendCommand(Command command, byte address[],
 }
 
 /*
-  Send a command to the other party and wait for the acknowledgement
+  Wait for and return a command packet. This is a blocking function and
+  won't return until a packet has been received. 
 */
 bool SerialCommand::getResponse(byte data[], byte &data_length) {
   if (receivePacket()) {
@@ -172,9 +155,9 @@ byte SerialCommand::asciiToNibble(char character) {
   Sends a packet with a header and footer added
 */
 void SerialCommand::sendPacket(byte packet[], int packet_length) {
-  Serial.write("++");
-  Serial.write(packet, packet_length);
-  Serial.write("--");
+  serial.write("++");
+  serial.write(packet, packet_length);
+  serial.write("--");
 }
 
 /*
@@ -241,8 +224,8 @@ bool SerialCommand::receivePacket() {
   A helper to wait for and return the next received byte
 */
 byte SerialCommand::getSerialByte() {
-  while (Serial.available() == false) {};
-  return Serial.read();
+  while (serial.available() == false) {};
+  return serial.read();
 }
 
 /*

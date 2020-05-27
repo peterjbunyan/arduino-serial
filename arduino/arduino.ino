@@ -3,6 +3,8 @@
 
 int button = 12;
 
+SerialCommand serial(Serial);
+
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 Range address_range, data_range, response_range = {0,0};
@@ -10,7 +12,7 @@ Command button_pressed = {1, address_range, data_range, response_range};
 
 void setup() {
   // put your setup code here, to run once:
-  SerialComm.begin(250000);
+  Serial.begin(250000);
 
   pinMode(button, INPUT_PULLUP);
   
@@ -25,7 +27,7 @@ void loop() {
   //We're using a pull-up resistor so LOW means the button is pressed
   if (digitalRead(button) == LOW) {
     if (last_state == HIGH) {
-      SerialComm.sendCommand(button_pressed);  
+      serial.sendCommand(button_pressed);  
     }
     last_state = LOW;
   } else {
@@ -34,7 +36,7 @@ void loop() {
   
   byte response[64] = {0};
   byte response_length = 0;
-  if (SerialComm.getResponse(response, response_length) == true) {
+  if (serial.getResponse(response, response_length) == true) {
     lcd.clear();
     lcd.print("Got a packet!");
     for (byte i = 0; i < response_length; i++) {

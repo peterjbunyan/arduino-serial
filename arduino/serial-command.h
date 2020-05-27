@@ -5,8 +5,9 @@
   A library for sending commands and data between an Arduino and another
   device over a serial connection.
   
-  This is a singleton class as (most) Arduino boards only support one 
-  hardware serial port, which we will be using.
+  While most Arduino boards only have one serial port, boards such as the
+  Mega have multiple hardware UARTs, and more can be set-up using the
+  SoftwareSerial library
   
   You can find more details on how this library works in the documentation
   in the GitHub repository https://github.com/peterjbunyan/arduino-serial
@@ -40,8 +41,7 @@ class SerialCommand {
   
   public:
   
-    static SerialCommand& getInstance();
-    void begin(long speed);
+    SerialCommand(Stream& stream = Serial) : serial(stream) {};
     bool open();
     bool close();
     bool sendCommand(Command command);
@@ -51,7 +51,7 @@ class SerialCommand {
     
   private:
   
-    SerialCommand() {};
+    Stream& serial;
     
     //Command variables
     static const Command open_command, close_command, ack_command;
@@ -73,9 +73,5 @@ class SerialCommand {
     bool isHexChar(char character);
     
 };
-
-//Define an externally accessible variable to hold the only instance of
-//our class
-extern SerialCommand SerialComm;
 
 #endif
