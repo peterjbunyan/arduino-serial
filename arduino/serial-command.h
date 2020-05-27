@@ -68,8 +68,7 @@ class SerialCommand {
     char nibbleToASCII(byte data);
     byte asciiToNibble(char character);
     void sendPacket(byte packet[], int packet_length);
-    bool receivePacket();
-    byte getSerialByte();
+    bool receivePacket(unsigned long timeout = 1000);
     bool isHexChar(char character);
     
 };

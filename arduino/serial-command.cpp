@@ -162,12 +162,16 @@ void SerialCommand::sendPacket(byte packet[], int packet_length) {
 
 /*
   Receive and store a packet. This is a blocking function and won't return
-  until a packet has been received. Returns true if the packet is 
-  correctly formed and false if it is not. A correctly formed packets has
-  between 6 and 60 bytes, and the number of bytes is even (Each data byte
-  is encoded as two bytes in the packet).
+  until a packet has been received or the timeout has expired. Returns
+  true if the packet is correctly formed and false if it is not or if no
+  packet is received. A  formed packets has between 6 and 60 bytes, and
+  the number of bytes is even (Each data byte is encoded as two bytes in
+  the packet).
 */
-bool SerialCommand::receivePacket() {
+bool SerialCommand::receivePacket(unsigned long timeout = 1000) {
+  unsigned long start_time = millis();
+  unsigned long elapsed_time = 0;
+  
   MessageState state = HEADER;
   byte header_count = 0;
   //Max data size is max packet length (64) minus two bytes each for the
@@ -176,56 +180,57 @@ bool SerialCommand::receivePacket() {
   byte data_length = 0;
   byte data_byte = 0;
   
-  while (state == HEADER) {
-    data_byte = getSerialByte();
-    if (data_byte == '+') {
-      header_count++;
-      if (header_count >= 2) {
-        state = DATA;
+  while ((state == HEADER) && (elapsed_time < timeout)) {
+    if (serial.available()) {
+      if (serial.read() == '+') {
+        header_count++;
+        if (header_count >= 2) {
+          state = DATA;
+        }
+      } else {
+        header_count = 0;
       }
-    } else {
-      header_count = 0;
     }
+    elapsed_time = millis() - start_time;
   }
   
-  while (state == DATA) {
-    data_byte = getSerialByte();
-    if (isHexChar(data_byte)) {
-      data_buffer[data_length++] = data_byte;
-      if (data_length >= 60) {
+  while ((state == DATA) && (elapsed_time < timeout)) {
+    if (serial.available()) {
+      data_byte = serial.read();
+      if (isHexChar(data_byte)) {
+        data_buffer[data_length++] = data_byte;
+        if (data_length >= 60) {
+          return false;
+        }
+      } else if (data_byte == '-') {
+        state = FOOTER;
+      } else {
         return false;
       }
-    } else if (data_byte == '-') {
-      state = FOOTER;
-    } else {
-      return false;
     }
+    elapsed_time = millis() - start_time;
   }
   
   if ((data_length < 6) || ((data_length % 2) != 0)) {
     return false;
   }
   
-  data_byte = getSerialByte();
-  if (data_byte == '-'){
-    for (int i = 0; i < data_length; i++) {
-      received_packet[i] = data_buffer[i];
+  while (elapsed_time < timeout) {
+    if (serial.available()) {
+      if (serial.read() == '-'){
+        for (int i = 0; i < data_length; i++) {
+          received_packet[i] = data_buffer[i];
+        }
+        received_packet_length = data_length;
+        packet_received = true;
+        return true;
+      }
     }
-    received_packet_length = data_length;
-    packet_received = true;
-    return true;
+    elapsed_time = millis() - start_time;
   }
 
   return false;
   
-}
-
-/*
-  A helper to wait for and return the next received byte
-*/
-byte SerialCommand::getSerialByte() {
-  while (serial.available() == false) {};
-  return serial.read();
 }
 
 /*

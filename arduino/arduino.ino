@@ -43,9 +43,6 @@ void loop() {
       lcd.print(response[i]);
       lcd.print(", ");
     }
-  } else {
-    lcd.clear();
-    lcd.print("Got a malformed packet!");
   }
   
 }
