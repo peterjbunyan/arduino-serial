@@ -45,10 +45,8 @@ bool SerialCommand::sendCommand(Command command) {
   }
   
   byte packet[3] = {command.ID, 0, 0};
-  byte encoded_packet[6];
-  encodeBytes(packet, 3, encoded_packet);
   
-  return sendPacket;
+  return sendPacket(packet, 3);
   
 }
 
@@ -155,7 +153,11 @@ byte SerialCommand::asciiToNibble(char character) {
   Sends a packet with a header and footer added, and waits for an ACK
   response. Tried 3 times and returns if we got a successful ACK or not.
 */
-bool SerialCommand::sendPacket(byte packet[], int packet_length) {
+bool SerialCommand::sendPacket(byte data[], int data_length) {
+  
+  byte packet_length = data_length*2;
+  byte packet[packet_length];
+  encodeBytes(data, data_length, packet);
   
   byte tries = 0;
   
