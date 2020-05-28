@@ -55,8 +55,8 @@ class SerialCommand {
     
     //Command variables
     static const Command open_command, close_command, ack_command;
-    volatile byte received_packet[60] = {0};
-    volatile byte received_packet_length = 0;
+    volatile byte received_bytes[30] = {0};
+    volatile byte received_bytes_length = 0;
     volatile bool packet_received = false;
     
     //Helper methods
@@ -67,7 +67,7 @@ class SerialCommand {
     void encodeByte(byte data, char encoded_byte[]);
     char nibbleToASCII(byte data);
     byte asciiToNibble(char character);
-    void sendPacket(byte packet[], int packet_length);
+    bool sendPacket(byte packet[], int packet_length);
     bool receivePacket(unsigned long timeout = 1000);
     bool isHexChar(char character);
     

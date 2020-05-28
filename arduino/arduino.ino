@@ -27,13 +27,19 @@ void loop() {
   //We're using a pull-up resistor so LOW means the button is pressed
   if (digitalRead(button) == LOW) {
     if (last_state == HIGH) {
-      serial.sendCommand(button_pressed);  
+      lcd.clear();
+      if (serial.sendCommand(button_pressed)) {
+        lcd.print("ACK Received!");
+      } else {
+        lcd.print("No ACK!");
+      }
     }
     last_state = LOW;
   } else {
     last_state = HIGH;
   }
   
+  /*
   byte response[64] = {0};
   byte response_length = 0;
   if (serial.getResponse(response, response_length) == true) {
@@ -44,5 +50,6 @@ void loop() {
       lcd.print(", ");
     }
   }
+  */
   
 }

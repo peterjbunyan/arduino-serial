@@ -48,10 +48,7 @@ bool SerialCommand::sendCommand(Command command) {
   byte encoded_packet[6];
   encodeBytes(packet, 3, encoded_packet);
   
-  sendPacket(encoded_packet, 6);
-  
-  //TODO: Implement ACK check
-  
+  return sendPacket;
   
 }
 
@@ -65,13 +62,16 @@ bool SerialCommand::sendCommand(Command command, byte address[],
 }
 
 /*
-  Wait for and return a command packet. This is a blocking function and
-  won't return until a packet has been received. 
+  Check to see if there is a packet we haven't read yet. If there is,
+  decode it and copy the decoded data to the passed-in array then return
+  true. If not, return false.
 */
 bool SerialCommand::getResponse(byte data[], byte &data_length) {
-  if (receivePacket()) {
-    decodeBytes(received_packet, received_packet_length, data);
-    data_length = received_packet_length/2;
+  if (packet_received == true) {
+    for (byte i = 0; i < received_bytes_length; i++) {
+      data[i] = received_bytes[i];
+    }
+    data_length = received_bytes_length;
     packet_received = false;
     return true;
   }
@@ -152,12 +152,25 @@ byte SerialCommand::asciiToNibble(char character) {
 }
 
 /*
-  Sends a packet with a header and footer added
+  Sends a packet with a header and footer added, and waits for an ACK
+  response. Tried 3 times and returns if we got a successful ACK or not.
 */
-void SerialCommand::sendPacket(byte packet[], int packet_length) {
-  serial.write("++");
-  serial.write(packet, packet_length);
-  serial.write("--");
+bool SerialCommand::sendPacket(byte packet[], int packet_length) {
+  
+  byte tries = 0;
+  
+  while (tries < 3) {
+    tries++;
+    serial.write("++");
+    serial.write(packet, packet_length);
+    serial.write("--");
+    if (receivePacket() && (received_bytes[0] == ack_command.ID)) {
+      return true;
+    }
+  }
+
+  return false;
+
 }
 
 /*
@@ -218,10 +231,8 @@ bool SerialCommand::receivePacket(unsigned long timeout = 1000) {
   while (elapsed_time < timeout) {
     if (serial.available()) {
       if (serial.read() == '-'){
-        for (int i = 0; i < data_length; i++) {
-          received_packet[i] = data_buffer[i];
-        }
-        received_packet_length = data_length;
+        decodeBytes(data_buffer, data_length, received_bytes);
+        received_bytes_length = data_length/2;
         packet_received = true;
         return true;
       }
